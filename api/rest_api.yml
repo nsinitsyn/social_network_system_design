@@ -1,0 +1,299 @@
+openapi: 3.0.1
+info:
+  title: SystemDesignCourse.Api
+  version: '1.0'
+paths:
+  /feed/get-search-result:
+    post:
+      tags:
+        - Feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetSearchResultRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/GetSearchResultRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/GetSearchResultRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/GetSearchResultResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSearchResultResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/GetSearchResultResponse'
+  /feed/get-feed:
+    post:
+      tags:
+        - Feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetFeedRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/GetFeedRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/GetFeedRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/GetFeedResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFeedResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/GetFeedResponse'
+  /post/publish:
+    post:
+      tags:
+        - Post
+      parameters:
+        - name: Description
+          in: query
+          style: form
+          schema:
+            type: string
+        - name: GeoPoint.Latitude
+          in: query
+          style: form
+          schema:
+            type: number
+            format: double
+        - name: GeoPoint.Longitude
+          in: query
+          style: form
+          schema:
+            type: number
+            format: double
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                Photos:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+            encoding:
+              Photos:
+                style: form
+      responses:
+        '200':
+          description: Success
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PublishPostResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishPostResponse'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/PublishPostResponse'
+  /post/add-comment:
+    post:
+      tags:
+        - Post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCommentRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AddCommentRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AddCommentRequest'
+      responses:
+        '200':
+          description: Success
+  /post/add-reaction:
+    post:
+      tags:
+        - Post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddReactionRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AddReactionRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AddReactionRequest'
+      responses:
+        '200':
+          description: Success
+  /subscription/subscribe:
+    post:
+      tags:
+        - Subscription
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscribeRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/SubscribeRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/SubscribeRequest'
+      responses:
+        '200':
+          description: Success
+components:
+  schemas:
+    AddCommentRequest:
+      type: object
+      properties:
+        postId:
+          type: string
+          format: uuid
+        commentText:
+          type: string
+          nullable: true
+      additionalProperties: false
+    AddReactionRequest:
+      type: object
+      properties:
+        postId:
+          type: string
+          format: uuid
+        reactionId:
+          type: integer
+          format: int32
+      additionalProperties: false
+    Comment:
+      type: object
+      properties:
+        authorId:
+          type: string
+          format: uuid
+        commentText:
+          type: string
+          nullable: true
+      additionalProperties: false
+    GeoPoint:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+      additionalProperties: false
+    GetFeedRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        page:
+          type: integer
+          format: int32
+      additionalProperties: false
+    GetFeedResponse:
+      type: object
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+          nullable: true
+        isLastPage:
+          type: boolean
+      additionalProperties: false
+    GetSearchResultRequest:
+      type: object
+      properties:
+        searchText:
+          type: string
+          nullable: true
+        page:
+          type: integer
+          format: int32
+      additionalProperties: false
+    GetSearchResultResponse:
+      type: object
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+          nullable: true
+        isLastPage:
+          type: boolean
+      additionalProperties: false
+    Post:
+      type: object
+      properties:
+        authorId:
+          type: string
+          format: uuid
+        photoUrls:
+          type: array
+          items:
+            type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        geoPoint:
+          $ref: '#/components/schemas/GeoPoint'
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+          nullable: true
+        reactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reaction'
+          nullable: true
+      additionalProperties: false
+    PublishPostResponse:
+      type: object
+      properties:
+        postId:
+          type: string
+          format: uuid
+      additionalProperties: false
+    Reaction:
+      type: object
+      properties:
+        authorId:
+          type: string
+          format: uuid
+        reactionId:
+          type: integer
+          format: int32
+      additionalProperties: false
+    SubscribeRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+      additionalProperties: false
