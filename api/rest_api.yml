@@ -210,9 +210,10 @@ components:
         userId:
           type: string
           format: uuid
-        page:
+        cursor:
           type: integer
-          format: int32
+          format: int64
+          nullable: true
       additionalProperties: false
     GetFeedResponse:
       type: object
@@ -222,8 +223,10 @@ components:
           items:
             $ref: '#/components/schemas/Post'
           nullable: true
-        isLastPage:
-          type: boolean
+        nextCursor:
+          type: integer
+          format: int64
+          nullable: true
       additionalProperties: false
     GetSearchResultRequest:
       type: object
@@ -231,9 +234,10 @@ components:
         searchText:
           type: string
           nullable: true
-        page:
+        cursor:
           type: integer
-          format: int32
+          format: int64
+          nullable: true
       additionalProperties: false
     GetSearchResultResponse:
       type: object
@@ -243,8 +247,10 @@ components:
           items:
             $ref: '#/components/schemas/Post'
           nullable: true
-        isLastPage:
-          type: boolean
+        nextCursor:
+          type: integer
+          format: int64
+          nullable: true
       additionalProperties: false
     Post:
       type: object
