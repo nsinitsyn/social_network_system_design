@@ -1,0 +1,379 @@
+openapi: 3.0.1
+info:
+  title: SystemDesignCourse.Api
+  version: '1.0'
+paths:
+  /feed/{userId}/{cursor}:
+    get:
+      tags:
+        - Feed
+      summary: Get feed
+      description: Method returns feed with using cursor pagination
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            default: 0
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetFeedResponse'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '500':
+          description: Server error
+  /post:
+    post:
+      tags:
+        - Post
+      summary: Publish post
+      description: Method publishes post and returns post id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishPostRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/PublishPostRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/PublishPostRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishPostResponse'
+        '400':
+          description: Bad Request
+        '500':
+          description: Server error
+  /post/{postId}/photo:
+    post:
+      tags:
+        - Post
+      summary: Upload photo for post
+      description: Method uploads photo for post and returns photo url
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  type: string
+                  format: binary
+            encoding:
+              photo:
+                style: form
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddPhotoResponse'
+        '500':
+          description: Server error
+  /post/{postId}/comment:
+    post:
+      tags:
+        - Post
+      summary: Add comment to post
+      description: Method adds comment to post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCommentRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AddCommentRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AddCommentRequest'
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '500':
+          description: Server error
+    get:
+      tags:
+        - Post
+      summary: Get comments for post
+      description: Method returns all comments for post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCommentsResponse'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '500':
+          description: Server error
+  /post/{postId}/reaction:
+    post:
+      tags:
+        - Post
+      summary: Add reaction to post
+      description: Method adds reaction to post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddReactionRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/AddReactionRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/AddReactionRequest'
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '500':
+          description: Server error
+  /search/{descriptionText}/{cursor}:
+    get:
+      tags:
+        - Search
+      summary: Get search result
+      description: Method returns search results for description with using cursor pagination
+      parameters:
+        - name: descriptionText
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cursor
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            default: 0
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSearchResultResponse'
+        '400':
+          description: Bad Request
+        '500':
+          description: Server error
+  /subscription:
+    post:
+      tags:
+        - Subscription
+      summary: Subscribe to user
+      description: Method subscribes current user for other user by user id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscribeRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/SubscribeRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/SubscribeRequest'
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '500':
+          description: Server error
+components:
+  schemas:
+    AddCommentRequest:
+      type: object
+      properties:
+        commentText:
+          type: string
+          nullable: true
+      additionalProperties: false
+    AddPhotoResponse:
+      type: object
+      properties:
+        photoUrl:
+          type: string
+          nullable: true
+      additionalProperties: false
+    AddReactionRequest:
+      type: object
+      properties:
+        reactionId:
+          type: integer
+          format: int32
+      additionalProperties: false
+    Comment:
+      type: object
+      properties:
+        authorId:
+          type: string
+          format: uuid
+        commentText:
+          type: string
+          nullable: true
+      additionalProperties: false
+    GeoPoint:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+      additionalProperties: false
+    GetCommentsResponse:
+      type: object
+      properties:
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+          nullable: true
+      additionalProperties: false
+    GetFeedResponse:
+      type: object
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+          nullable: true
+        nextCursor:
+          type: integer
+          format: int64
+          nullable: true
+      additionalProperties: false
+    GetSearchResultResponse:
+      type: object
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+          nullable: true
+        nextCursor:
+          type: integer
+          format: int64
+          nullable: true
+      additionalProperties: false
+    Post:
+      type: object
+      properties:
+        authorId:
+          type: string
+          format: uuid
+        photoUrls:
+          type: array
+          items:
+            type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        geoPoint:
+          $ref: '#/components/schemas/GeoPoint'
+        reactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reaction'
+          nullable: true
+      additionalProperties: false
+    PublishPostRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          nullable: true
+        geoPoint:
+          $ref: '#/components/schemas/GeoPoint'
+      additionalProperties: false
+    PublishPostResponse:
+      type: object
+      properties:
+        postId:
+          type: string
+          format: uuid
+      additionalProperties: false
+    Reaction:
+      type: object
+      properties:
+        authorId:
+          type: string
+          format: uuid
+        reactionId:
+          type: integer
+          format: int32
+        count:
+          type: integer
+          format: int32
+      additionalProperties: false
+    SubscribeRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+      additionalProperties: false
