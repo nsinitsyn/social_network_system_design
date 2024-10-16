@@ -36,6 +36,33 @@ paths:
           description: Not Found
         '500':
           description: Server error
+  /media/photo:
+    post:
+      tags:
+        - Media
+      summary: Upload photo
+      description: Method uploads photo and returns photo url
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  type: string
+                  format: binary
+            encoding:
+              photo:
+                style: form
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddPhotoResponse'
+        '500':
+          description: Server error
   /post:
     post:
       tags:
@@ -62,39 +89,6 @@ paths:
                 $ref: '#/components/schemas/PublishPostResponse'
         '400':
           description: Bad Request
-        '500':
-          description: Server error
-  /post/{postId}/photo:
-    post:
-      tags:
-        - Post
-      summary: Upload photo for post
-      description: Method uploads photo for post and returns photo url
-      parameters:
-        - name: postId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                photo:
-                  type: string
-                  format: binary
-            encoding:
-              photo:
-                style: form
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddPhotoResponse'
         '500':
           description: Server error
   /post/{postId}/comment:
@@ -349,6 +343,11 @@ components:
           nullable: true
         geoPoint:
           $ref: '#/components/schemas/GeoPoint'
+        photoUrls:
+          type: array
+          items:
+            type: string
+          nullable: true
       additionalProperties: false
     PublishPostResponse:
       type: object
