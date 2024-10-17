@@ -10,7 +10,8 @@ https://balun.courses/courses/system_design
 - Пользователь может просматривать ленту других пользователей
 
 ## Нефункциональные требования
-- DAU - через год 10 000 000, в дальнейшем будет расти до 20 000 000.
+- DAU - 10 000 000 за первый год, дальнейший рост x1.5 в год.
+- Общее число пользователей за первый год - 100 000 000
 - Регион использования: Только СНГ
 - Сезонность: основные пики нагрузки будут приходиться на летний период, новогодние и майские праздники - 100 дней в году.
 - Условия хранения данных: данные храним всегда.
@@ -22,7 +23,7 @@ https://balun.courses/courses/system_design
   - на кол-во подписчиков ограничений нет
   - вес одного фото не должен превышать 1 МЬ
 - Ожидания:
-  - один пользователь в среднем подписан на 5 других пользователей
+  - один пользователь в среднем подписывается на 5 других пользователей за год
   - один пост содержит в среднем 3 фото, описание на 300 символов и геолокацию
   - один пост содержит в среднем 5 комментариев по 50 символов и 10 реакций
   - вес фото в посте в среднем 1 Mb
@@ -35,6 +36,7 @@ https://balun.courses/courses/system_design
   - Публикация постов
     - 1 пользователь публикует 1 пост в неделю
 	- Коэффициент сезонности: x21 (3 поста в день)
+    - 1 пользователь публикует в среднем 38 постов в год в несезон + 300 постов в год в сезон. Всего 338 постов в год.
   - Добавление комментариев и реакций
     - 1 пользователь оставляет 2 комментария и реакции в день
     - Коэффициент сезонности: x3 (6 комментария и реакций в день)
@@ -62,7 +64,7 @@ https://balun.courses/courses/system_design
 - Поиск (с фото, без комментариев) - в среднем 1 пользователь за 1 просмотр ленты делает 3 постраничных запроса
   - Throughput (read) = (20 000 000 * 1 / 86 400) * 3 = 690 RPS
   - Throughput (read) в сезонность: (230 * 0.3) * 3 = 207 RPS
-- Просмотр постов из ленты и поиска (с фото и комментариями):
+- Просмотр постов из ленты и поиска (подгрузка только комментариев, фото и метаданные уже загружены):
   - Throughput (read) = (345 + 690) * 3 = 3105 RPS
   - Throughput (read) в сезонность: 3105 * 3 = 9315 RPS
 ### Traffic
@@ -71,10 +73,10 @@ https://balun.courses/courses/system_design
 - Комментарии поста: 260 bytes
 - Публикация постов (с фото)
   - В обычное время:
-    - Traffic (write) = 33 * (3 Mb * 0.7) Mb = 70 Mb/s
+    - Traffic (write) фото = 33 * (3 Mb * 0.7) Mb = 70 Mb/s
     - Traffic (write) метаданные = 33 * 308 b = 10 Kb/s
   - В сезонность:
-    - Traffic (write) = 70 * 21 = 1470 Mb/s
+    - Traffic (write) фото = 70 * 21 = 1470 Mb/s
     - Traffic (write) метаданные = 10 * 21 = 210 Kb/s
 - Добавление комментариев и реакций
   - В обычное время:
@@ -100,12 +102,104 @@ https://balun.courses/courses/system_design
   - В сезонность:
     - Traffic (read) фото = 6900 Mb/s * 0.3 = 2070 Mb/s
     - Traffic (read) метаданные = 1035 Kb/s * 0.3 = 310 Kb/s
-- Просмотр постов из ленты и поиска (с фото и комментариями):
+- Просмотр постов из ленты и поиска (подгрузка только комментариев, фото и метаданные уже загружены):
   - В обычное время:
-	- Traffic (read) фото = 3105 * 3 Mb = 9315 Mb/s
+	- Traffic (read) фото = 0
+    - Traffic (read) метаданные = 0
 	- Traffic (read) комментарии = 3105 * 260 b = 807 Kb/s
-    - Traffic (read) метаданные = 3105 * 308 b = 956 Kb/s
   - В сезонность:
-	- Traffic (read) фото = 9315 Mb/s * 3 = 27945 Mb/s
+	- Traffic (read) фото = 0
+    - Traffic (read) метаданные = 0
 	- Traffic (read) комментарии = 807 Kb/s * 3 = 2421 Kb/s
-    - Traffic (read) метаданные = 956 Kb/s * 3 = 2868 Kb/s
+
+### Required memory:
+Расчеты за первый год
+- Медиа
+  - В обычное время (HDD):
+    Сapacity = 33 RPS * 3 Mb * 86 400 * 265 days = 2 300 Tb
+	Disks_for_capacity = 2 300 ТБ / 32 ТБ = 72
+	Disks_for_throughput = (70 Mb/s + 3450 Mb/s + 6900 Mb/s) / 100 МБ/с = 104
+	Disks_for_iops = (33 RPS + 345 RPS + 690 RPS) / 100 = 11
+	Disks = max(72, 104, 11) = 104 HDD диска по 32 Tb
+
+  - В сезонность (HDD):
+    Сapacity = 700 RPS * 3Mb * 86 400 * 100 days = 18 000 Tb
+    Disks_for_capacity = 18 000 Tb / 32 Tb = 563
+	Disks_for_throughput = (1470 Mb/s + 27600 Mb/s + 6900 Mb/s) / 100 МБ/с = 360
+    Disks_for_iops = (700 RPS + 2760 RPS + 207 RPS) / 100 = 37
+    Disks = max(563, 360, 37) = 563 HDD диска по 32 Tb
+
+- Посты (метаданные)
+  - В обычное время (SSD SATA):
+    Сapacity = 33 RPS * 400 b * 86 400 * 265 days = 302 Gb
+	Disks_for_capacity = 302 Gb / 1 ТБ = 1
+	Disks_for_throughput = (10 Kb/s + 518 Kb/s + 1035 Kb/s) / 500 МБ/с = 1
+	Disks_for_iops = (33 RPS + 345 RPS + 690 RPS) / 1000 = 2
+	Disks = max(1, 1, 2) = 2 SSD (SATA) диска по 1 Tb
+
+  - В сезонность (SSD SATA):
+    Сapacity = 700 RPS * 400 b * 86 400 * 100 days = 3 Tb
+    Disks_for_capacity = 3 Tb / 1 ТБ = 3
+	Disks_for_throughput = (210 Kb/s + 4144 Kb/s + 310 Kb/s) / 500 МБ/с = 1
+    Disks_for_iops = (700 RPS + 2760 RPS + 207 RPS) / 1000 = 4
+    Disks = max(3, 1, 4) = 4 SSD (SATA) диска по 1 Tb
+
+- Комментарии
+  - В обычное время (SSD SATA):
+    Сapacity = 450 RPS * 100 b * 86 400 * 265 days = 2 Tb
+	Disks_for_capacity = 2 Gb / 1 ТБ = 2
+	Disks_for_throughput = (23 Kb/s + 807 Kb/s) / 500 МБ/с = 1
+	Disks_for_iops = (450 RPS + 3105 RPS) / 1000 = 4
+	Disks = max(2, 1, 4) = 4 SSD (SATA) диска по 1 Tb
+
+  - В сезонность (SSD SATA):
+    Сapacity = 700 RPS * 100 b * 86 400 * 100 days = 604 Gb
+    Disks_for_capacity = 604 Gb / 1 ТБ = 1
+	Disks_for_throughput = (69 Kb/s + 2421 Kb/s) / 500 МБ/с = 1
+    Disks_for_iops = (1350 RPS + 9315 RPS) / 1000 = 11
+    Disks = max(1, 1, 11) = 11 SSD (SATA) дисков по 1 Tb
+
+- Поиск
+  - В обычное время (SSD SATA):
+    Сapacity = 33 RPS * 700 b * 86 400 * 265 days = 528 Gb
+	Disks_for_capacity = 528 Gb / 1 ТБ = 1
+	Disks_for_throughput = (10 Kb/s + 1035 Kb/s) / 500 МБ/с = 1
+	Disks_for_iops = (33 RPS + 690 RPS) / 1000 = 1
+	Disks = max(1, 1, 1) = 1 SSD (SATA) диск по 1 Tb
+
+  - В сезонность (SSD SATA):
+    Сapacity = 700 RPS * 700 b * 86 400 * 100 days = 5 Tb
+    Disks_for_capacity = 5 Tb / 1 ТБ = 5
+	Disks_for_throughput = (210 Kb/s + 310 Kb/s) / 500 МБ/с = 1
+    Disks_for_iops = (700 RPS + 207 RPS) / 1000 = 1
+    Disks = max(5, 1, 1) = 5 SSD (SATA) дисков по 1 Tb
+
+- Лента
+  - В обычное время (SSD SATA):
+    Сapacity = (100 000 000 * 500 b * 20) + (100 000 000 * 8 b * 338 * 5) = 1 Tb + 11 Tb = 12 Tb // 1 пользователь в среднем подписан на 5 других пользователей, у каждого из которых в среднем публикуется 338 постов в год. Отсюда 338 * 5
+	Disks_for_capacity = 12 Tb / 8 ТБ = 2
+	Disks_for_throughput = (10 Kb/s + 518 Kb/s) / 500 МБ/с = 1
+	Disks_for_iops = (33 RPS + 345 RPS) / 1000 = 1
+	Disks = max(2, 1, 1) = 1 SSD (SATA) диск по 8 Tb
+
+  - В сезонность (SSD SATA):
+    Сapacity = (100 000 000 * 500 b * 20) + (100 000 000 * 8 b * 338 * 5) = 1 Tb + 11 Tb = 12 Tb
+	Disks_for_capacity = 12 Tb / 8 ТБ = 2
+	Disks_for_throughput = (210 Kb/s + 4144 Kb/s) / 500 МБ/с = 1
+    Disks_for_iops = (700 RPS + 2760 RPS) / 1000 = 4
+    Disks = max(2, 1, 4) = 4 SSD (SATA) диска по 8 Tb
+
+- Подписки
+  - В обычное время (SSD SATA):
+    Сapacity = 100 000 000 users * 5 subscribers * 2 lists * 8 b = 8 Gb
+	Disks_for_capacity = 8 Gb / 1 ТБ = 1
+	Disks_for_throughput = 1 Kb/s / 500 МБ/с = 1
+	Disks_for_iops = 1 / 1000 = 1
+	Disks = max(1, 1, 1) = 1 SSD (SATA) диск по 1 Tb
+
+  - В сезонность (SSD SATA):
+    Сapacity = 100 000 000 users * 5 subscribers * 2 lists * 8 b = 8 Gb
+	Disks_for_capacity = 8 Gb / 1 ТБ = 1
+	Disks_for_throughput = 1 Kb/s / 500 МБ/с = 1
+	Disks_for_iops = 1 / 1000 = 1
+	Disks = max(1, 1, 1) = 1 SSD (SATA) диск по 1 Tb
